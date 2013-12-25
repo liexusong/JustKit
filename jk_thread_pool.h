@@ -22,7 +22,8 @@
 #define __JK_THREAD_POOL_H
 
 
-typedef void jk_thread_loop_fn(void *);
+typedef void jk_thread_call_fn(void *);
+typedef void jk_thread_free_fn(void *);
 typedef struct jk_thread_task_s jk_thread_task_t;
 
 
@@ -35,7 +36,8 @@ typedef struct jk_thread_pool_s {
 
 
 struct jk_thread_task_s {
-    jk_thread_loop_fn *cb;
+    jk_thread_call_fn *call;
+    jk_thread_free_fn *free;
     void *arg;
     jk_thread_task_t *next;
 };
