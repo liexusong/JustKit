@@ -23,7 +23,7 @@
 
 
 typedef void jk_thread_call_fn(void *);
-typedef void jk_thread_free_fn(void *);
+typedef void jk_thread_finish_fn(void *);
 typedef struct jk_thread_task_s jk_thread_task_t;
 
 
@@ -37,15 +37,15 @@ typedef struct jk_thread_pool_s {
 
 struct jk_thread_task_s {
     jk_thread_call_fn *call;
-    jk_thread_free_fn *free;
+    jk_thread_finish_fn *finish;
     void *arg;
     jk_thread_task_t *next;
 };
 
 
 jk_thread_pool_t *jk_thread_pool_new(int thread_nums);
-int jk_thread_pool_push(jk_thread_pool_t *thd, jk_thread_loop_fn *cb,
-    void *arg);
+int jk_thread_pool_push(jk_thread_pool_t *thd, jk_thread_call_fn *call,
+    void *arg, jk_thread_finish_fn *finish);
 
 
 #endif

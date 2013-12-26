@@ -44,8 +44,8 @@ static void *jk_thread_loop(void *arg)
 
         tsk->call(tsk->arg);
 
-        if (tsk->free) {
-            tsk->free(tsk->arg);
+        if (tsk->finish) {
+            tsk->finish(tsk->arg);
         }
         free(tsk);
     }
@@ -83,7 +83,7 @@ jk_thread_pool_t *jk_thread_pool_new(int thread_nums)
 
 
 int jk_thread_pool_push(jk_thread_pool_t *thd, jk_thread_call_fn *call,
-    void *arg, jk_thread_free_fn *free)
+    void *arg, jk_thread_finish_fn *finish)
 {
     jk_thread_task_t *tsk;
 
@@ -93,7 +93,7 @@ int jk_thread_pool_push(jk_thread_pool_t *thd, jk_thread_call_fn *call,
     }
 
     tsk->call = call;
-    tsk->free = free;
+    tsk->finish = finish;
     tsk->arg = arg;
 
     pthread_mutex_lock(&thd->lock);
