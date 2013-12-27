@@ -19,6 +19,7 @@
  */
 
 #include <pthread.h>
+#include <stdlib.h>
 #include "jk_thread_pool.h"
 
 

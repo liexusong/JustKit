@@ -18,6 +18,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include "jk_thread_pool.h"
 #include "jk_aio.h"
@@ -35,20 +37,90 @@ static jk_thread_pool_t *worker_pool;
 
 int jk_aio_init()
 {
+    int flags;
+
     if (pthread_mutex_init(&aio.lock, NULL) == -1) {
         return -1;
     }
 
     aio.response = NULL;
-    aio.count = 0;
+    aio.nreqs = 0;
 
-    worker_pool = jk_thread_pool_new(JK_AIO_WORKER_THREADS);
-    if (!worker_pool) {
+    if (pipe(aio.pipe) == -1) {
         pthread_mutex_destroy(&aio.lock);
         return -1;
     }
 
+    if ((flags = fcntl(aio.pipe[0], F_GETFL, 0)) < 0 ||
+         fcntl(aio.pipe[0], F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        pthread_mutex_destroy(&aio.lock);
+        close(aio.pipe[0]);
+        close(aio.pipe[1]);
+        return -1;
+    }
+
+    if ((flags = fcntl(aio.pipe[1], F_GETFL, 0)) < 0 ||
+         fcntl(aio.pipe[1], F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        pthread_mutex_destroy(&aio.lock);
+        close(aio.pipe[0]);
+        close(aio.pipe[1]);
+        return -1;
+    }
+
+    worker_pool = jk_thread_pool_new(JK_AIO_WORKER_THREADS);
+    if (!worker_pool) {
+        pthread_mutex_destroy(&aio.lock);
+        close(aio.pipe[0]);
+        close(aio.pipe[1]);
+        return -1;
+    }
+
     return 0;
+}
+
+
+int jk_aio_nreqs()
+{
+    int nreqs;
+
+    pthread_mutex_lock(&aio.lock);
+
+    nreqs = aio.nreqs;
+
+    pthread_mutex_unlock(&aio.lock);
+
+    return nreqs;
+}
+
+
+int jk_aio_wait(struct timeval *tv)
+{
+    fd_set sets;
+    int ret, count = 0;
+    char c;
+
+    FD_ZERO(&sets);
+    FD_SET(aio.pipe[0], &sets);
+
+    ret = select(aio.pipe[0] + 1, &sets, NULL, NULL, tv);
+    if (ret < 0) {
+        return -1;
+    } else if (ret == 0) {
+        return 0;
+    }
+
+    while (1) {
+        ret = read(aio.pipe[0], &c, 1);
+        if (ret > 0) {
+            count++;
+        } else {
+            break;
+        }
+    }
+
+    return count;
 }
 
 
@@ -60,20 +132,17 @@ int jk_aio_poll()
     for (;;) {
 
         pthread_mutex_lock(&aio.lock);
-        if (aio.count <= 0) {
+
+        req = aio.response;
+        if (!req) {
             pthread_mutex_unlock(&aio.lock);
             return processed;
         }
 
-        req = aio.response;
         aio.response = req->next;
-        aio.count--;
+        aio.nreqs--;
 
         pthread_mutex_unlock(&aio.lock);
-
-        if (!req) { /* something wrong */
-            return processed;
-        }
 
         if (req->finish) {
             req->finish(req);
@@ -98,14 +167,23 @@ static jk_aio_request_t *jk_aio_request(int type, jk_aio_finish_fn *finish)
     req->type = type;
     req->finish = finish;
     req->next = NULL;
+
     return req;
 }
 
 
 static int jk_aio_submit(jk_aio_request_t *req)
 {
+    pthread_mutex_lock(&aio.lock);
+    aio.nreqs++;
+    pthread_mutex_unlock(&aio.lock);
+
     if (jk_thread_pool_push(worker_pool, jk_aio_execute, (void *)req,
-        jk_aio_fininsh)) {
+        jk_aio_fininsh))
+    {
+        pthread_mutex_lock(&aio.lock);
+        aio.nreqs--;
+        pthread_mutex_unlock(&aio.lock);
         return -1;
     }
     return 0;
@@ -161,7 +239,8 @@ static void jk_aio_fininsh(void *arg)
 
     req->next = aio.response;
     aio.response = req;
-    aio.count++;
+
+    write(aio.pipe[1], '\0', 1);
 
     pthread_mutex_unlock(&aio.lock);
 }
@@ -264,3 +343,4 @@ int jk_aio_rmdir(char *path, jk_aio_finish_fn *finish)
 
     return jk_aio_submit(req);
 }
+

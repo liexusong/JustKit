@@ -39,8 +39,9 @@ typedef enum {
 
 typedef struct jk_aio_s {
     pthread_mutex_t lock;
+    int pipe[2];
     jk_aio_request_t *response;
-    int count;
+    int nreqs;
 } jk_aio_t;
 
 
@@ -60,6 +61,7 @@ struct jk_aio_request_s {
 
 int jk_aio_init();
 int jk_aio_poll();
+int jk_aio_nreqs();
 int jk_aio_read(int fd, char *buf, int size, jk_aio_finish_fn *finish);
 int jk_aio_write(int fd, char *buf, int size, jk_aio_finish_fn *finish);
 int jk_aio_open(char *path, int flags, mode_t mode, jk_aio_finish_fn *finish);
