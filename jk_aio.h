@@ -34,7 +34,8 @@ typedef enum {
     jk_aio_operate_open,
     jk_aio_operate_close,
     jk_aio_operate_mkdir,
-    jk_aio_operate_rmdir
+    jk_aio_operate_rmdir,
+    jk_aio_operate_unlink
 } jk_aio_operate_t;
 
 
@@ -56,6 +57,7 @@ struct jk_aio_request_s {
     int flags;               /* open */
     mode_t mode;             /* open/mkdir */
     int result;              /* result */
+    int errno;               /* errno */
     jk_aio_finish_fn *finish;
     jk_aio_request_t *next;
 };
@@ -71,9 +73,11 @@ int jk_aio_open(char *path, int flags, mode_t mode, jk_aio_finish_fn *finish);
 int jk_aio_close(int fd, jk_aio_finish_fn *finish);
 int jk_aio_mkdir(char *path, mode_t mode, jk_aio_finish_fn *finish);
 int jk_aio_rmdir(char *path, jk_aio_finish_fn *finish);
+int jk_aio_unlink(char *path, jk_aio_finish_fn *finish);
 
 
 #define JK_AIO_RESULT(req)  (req)->result
+#define JK_AIO_ERRNO(req)   (req)->errno
 #define JK_AIO_BUFFER(req)  (req)->buf
 
 

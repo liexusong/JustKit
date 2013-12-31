@@ -236,7 +236,13 @@ static void jk_aio_execute(void *arg)
     case jk_aio_operate_rmdir:
         req->result = rmdir(req->path);
         break;
+
+    case jk_aio_operate_unlink:
+        req->result = unlink(req->path);
+        break;
     }
+
+    req->errno = errno;
 }
 
 
@@ -349,6 +355,23 @@ int jk_aio_mkdir(char *path, mode_t mode, jk_aio_finish_fn *finish)
 int jk_aio_rmdir(char *path, jk_aio_finish_fn *finish)
 {
     jk_aio_request_t *req = jk_aio_request(jk_aio_operate_rmdir, finish);
+    if (!req) {
+        return -1;
+    }
+
+    req->path = strdup(path);
+    if (!req->path) {
+        jk_aio_destory(req);
+        return -1;
+    }
+
+    return jk_aio_submit(req);
+}
+
+
+int jk_aio_unlink(char *path, jk_aio_finish_fn *finish)
+{
+    jk_aio_request_t *req = jk_aio_request(jk_aio_operate_unlink, finish);
     if (!req) {
         return -1;
     }
