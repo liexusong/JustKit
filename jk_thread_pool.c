@@ -18,7 +18,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pthread.h>
 #include <stdlib.h>
 #include "jk_thread_pool.h"
 
@@ -27,6 +26,9 @@ static void *jk_thread_loop(void *arg)
 {
     jk_thread_pool_t *thd = arg;
     jk_thread_task_t *tsk;
+
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
     pthread_mutex_lock(&thd->wait_lock);
     thd->wait_threads--;
@@ -38,7 +40,7 @@ static void *jk_thread_loop(void *arg)
         pthread_mutex_lock(&thd->lock);
 
         while (thd->task_nums <= 0) {
-            pthread_cond_wait(&thd->cond, &thd->lock);
+            pthread_cond_wait(&thd->cond, &thd->lock); /* Here maybe destroy */
         }
 
         /* Get lock here */
@@ -73,7 +75,14 @@ jk_thread_pool_t *jk_thread_pool_new(int thread_nums)
 
     thd->wait_tasks = NULL;
     thd->task_nums = 0;
+    thd->worker_threads = thread_nums;
     thd->wait_threads = thread_nums;
+    
+    thd->tids = malloc(sizeof(pthread_t) * thread_nums);
+    if (!thd->tids) {
+        free(thd);
+        return NULL;
+    }
 
     pthread_mutex_init(&thd->lock, NULL);
     pthread_cond_init(&thd->cond, NULL);
@@ -81,7 +90,8 @@ jk_thread_pool_t *jk_thread_pool_new(int thread_nums)
     pthread_cond_init(&thd->wait_cond, NULL);
 
     for (i = 0; i < thread_nums; i++) {
-        if (pthread_create(&tid, NULL, jk_thread_loop, thd) == -1) {
+        if (pthread_create(&thd->tids[i], NULL, jk_thread_loop, thd) == -1) {
+            free(thd->tids);
             free(thd);
             return NULL;
         }
@@ -121,5 +131,38 @@ int jk_thread_pool_push(jk_thread_pool_t *thd, jk_thread_call_fn *call,
     pthread_mutex_unlock(&thd->lock);
 
     return 0;
+}
+
+
+void jk_thread_pool_destroy(jk_thread_pool_t *thd)
+{
+    jk_thread_task_t *task, *next;
+    int i;
+
+    pthread_mutex_lock(&thd->lock);
+
+    task = thd->wait_tasks;
+    while (task) {
+        next = task->next;
+        free(task);
+        task = next;
+        thd->task_nums--;
+    }
+
+    pthread_mutex_unlock(&thd->lock);
+
+    for (i = 0; i < thd->worker_threads; i++) {
+        pthread_cancel(thd->tids[i]);
+    }
+
+    pthread_mutex_destroy(&thd->lock);
+    pthread_cond_destroy(&thd->cond);
+    pthread_mutex_destroy(&thd->wait_lock);
+    pthread_cond_destroy(&thd->wait_cond);
+
+    free(thd->tids);
+    free(thd);
+
+    return;
 }
 

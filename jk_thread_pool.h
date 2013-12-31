@@ -21,22 +21,23 @@
 #ifndef __JK_THREAD_POOL_H
 #define __JK_THREAD_POOL_H
 
+#include <pthread.h>
 
 typedef void jk_thread_call_fn(void *);
 typedef void jk_thread_finish_fn(void *);
 typedef struct jk_thread_task_s jk_thread_task_t;
 
-
 typedef struct jk_thread_pool_s {
     jk_thread_task_t *wait_tasks;
     int task_nums;
+    int worker_threads;
+    pthread_t *tids;
     pthread_mutex_t lock;
     pthread_cond_t cond;
     int wait_threads;
     pthread_mutex_t wait_lock;
     pthread_cond_t wait_cond;
 } jk_thread_pool_t;
-
 
 struct jk_thread_task_s {
     jk_thread_call_fn *call;
@@ -45,10 +46,10 @@ struct jk_thread_task_s {
     jk_thread_task_t *next;
 };
 
-
 jk_thread_pool_t *jk_thread_pool_new(int thread_nums);
 int jk_thread_pool_push(jk_thread_pool_t *thd, jk_thread_call_fn *call,
     void *arg, jk_thread_finish_fn *finish);
+void jk_thread_pool_destroy(jk_thread_pool_t *thd);
 
 
 #endif
