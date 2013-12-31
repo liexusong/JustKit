@@ -21,12 +21,14 @@
 #ifndef __JK_HASH_H
 #define __JK_HASH_H
 
+#include "jk_types.h"
+
 #define  JK_HASH_OK              (0)
 #define  JK_HASH_ERR             (-1)
 #define  JK_HASH_DUPLICATE_KEY   (-2)
 
-#define  JK_HASH_BUCKETS_MIN_SIZE  7
-#define  JK_HASH_BUCKETS_MAX_SIZE  2147483647
+#define  JK_HASH_BUCKETS_MIN_SIZE   7
+#define  JK_HASH_BUCKETS_MAX_SIZE   2147483647
 
 typedef long jk_hash_fn(char *, int);
 typedef void jk_hash_free(void *);

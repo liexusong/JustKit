@@ -32,7 +32,10 @@ static unsigned int jk_hash_buckets_size[] = {
 };
 
 
-static long jk_hash_default_hash(char *key, uint klen)
+static void jk_hash_rehash(jk_hash_t *o);
+
+
+static long jk_hash_default_hash(char *key, int klen)
 {
     long h = 0, g;
     char *kend = key + klen;
@@ -59,7 +62,7 @@ jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_fn *hash,
     }
 
     if (init_buckets < JK_HASH_BUCKETS_MIN_SIZE) {
-        init_buckets = JK_HASH_BUCKETS_INIT_SIZE;
+        init_buckets = JK_HASH_BUCKETS_MIN_SIZE;
 
     } else if (init_buckets > JK_HASH_BUCKETS_MAX_SIZE) {
         init_buckets = JK_HASH_BUCKETS_MAX_SIZE;
@@ -112,25 +115,26 @@ int jk_hash_insert(jk_hash_t *o, char *key, int klen, void *data, int replace)
     long hashval = o->hash(key, klen);
     int index = hashval % o->buckets_size;
 
-    ei = &o->buckets[index];
+    ei = (jk_hash_entry_t **)&o->buckets[index];
+
     while (*ei) {
-        if (*ei->hashval == hashval && *ei->klen == klen &&
-            !strncmp(*ei->key, key, klen)) /* found the key */
+        if ((*ei)->hashval == hashval && (*ei)->klen == klen &&
+            !strncmp((*ei)->key, key, klen)) /* found the key */
         {
             if (replace) {
                 if (o->free) {
-                    o->free(*ei->data);
+                    o->free((*ei)->data);
                 }
-                *ei->data = data;
+                (*ei)->data = data;
                 return JK_HASH_OK;
             }
             return JK_HASH_DUPLICATE_KEY;
         }
-        ei = &(*ei->next);
+        ei = &((*ei)->next);
     }
 
     en = malloc(sizeof(*en) + klen);
-    if (NULL == e) {
+    if (NULL == en) {
         return JK_HASH_ERR;
     }
 
@@ -268,3 +272,4 @@ void jk_hash_destroy(jk_hash_t *o)
 
     return;
 }
+
