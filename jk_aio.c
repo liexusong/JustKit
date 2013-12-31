@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
+#include <sys/types.h>
+#include <fcntl.h>
 #include "jk_thread_pool.h"
 #include "jk_aio.h"
 
@@ -43,8 +46,10 @@ int jk_aio_init()
         return -1;
     }
 
-    aio.response = NULL;
+    aio.rhead = NULL;
+    aio.rtail = NULL;
     aio.nreqs = 0;
+    aio.ncoms = 0;
 
     if (pipe(aio.pipe) == -1) {
         pthread_mutex_destroy(&aio.lock);
@@ -83,15 +88,15 @@ int jk_aio_init()
 
 int jk_aio_nreqs()
 {
-    int nreqs;
+    int waits;
 
     pthread_mutex_lock(&aio.lock);
 
-    nreqs = aio.nreqs;
+    waits = aio.nreqs - aio.ncoms;
 
     pthread_mutex_unlock(&aio.lock);
 
-    return nreqs;
+    return waits;
 }
 
 
@@ -133,14 +138,18 @@ int jk_aio_poll()
 
         pthread_mutex_lock(&aio.lock);
 
-        req = aio.response;
+        req = aio.rhead;
         if (!req) {
             pthread_mutex_unlock(&aio.lock);
             return processed;
         }
 
-        aio.response = req->next;
-        aio.nreqs--;
+        aio.rhead = req->next;
+        if (!aio.rhead) {
+            aio.rtail = NULL;
+        }
+
+        aio.ncoms++;
 
         pthread_mutex_unlock(&aio.lock);
 
@@ -237,10 +246,19 @@ static void jk_aio_fininsh(void *arg)
 
     pthread_mutex_lock(&aio.lock);
 
-    req->next = aio.response;
-    aio.response = req;
+    req->next = NULL;
 
-    write(aio.pipe[1], '\0', 1);
+    if (!aio.rhead) {
+        aio.rhead = req;
+    }
+
+    if (aio.rtail) {
+        aio.rtail->next = req;
+    }
+
+    aio.rtail = req;
+
+    write(aio.pipe[1], "\0", 1);
 
     pthread_mutex_unlock(&aio.lock);
 }

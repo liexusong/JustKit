@@ -21,6 +21,7 @@
 #ifndef __JK_AIO_H
 #define __JK_AIO_H
 
+#include "jk_types.h"
 
 #define  JK_AIO_WORKER_THREADS  15
 
@@ -40,20 +41,21 @@ typedef enum {
 typedef struct jk_aio_s {
     pthread_mutex_t lock;
     int pipe[2];
-    jk_aio_request_t *response;
-    int nreqs;
+    jk_aio_request_t *rhead, *rtail; /* finish requests list */
+    jk_uint64_t nreqs;
+    jk_uint64_t ncoms;
 } jk_aio_t;
 
 
 struct jk_aio_request_s {
     jk_aio_operate_t type;   /* operate */
-    int fd;        /* read/write/close */
-    int size;      /* read/write */
-    char *buf;     /* read/write */
-    char *path;    /* open/mkdir/rmdir */
-    int flags;     /* open */
-    mode_t mode;   /* open/mkdir */
-    int result;    /* result */
+    int fd;                  /* read/write/close */
+    int size;                /* read/write */
+    char *buf;               /* read/write */
+    char *path;              /* open/mkdir/rmdir */
+    int flags;               /* open */
+    mode_t mode;             /* open/mkdir */
+    int result;              /* result */
     jk_aio_finish_fn *finish;
     jk_aio_request_t *next;
 };
@@ -61,6 +63,7 @@ struct jk_aio_request_s {
 
 int jk_aio_init();
 int jk_aio_poll();
+int jk_aio_wait(struct timeval *tv);
 int jk_aio_nreqs();
 int jk_aio_read(int fd, char *buf, int size, jk_aio_finish_fn *finish);
 int jk_aio_write(int fd, char *buf, int size, jk_aio_finish_fn *finish);
