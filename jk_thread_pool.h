@@ -32,6 +32,9 @@ typedef struct jk_thread_pool_s {
     int task_nums;
     pthread_mutex_t lock;
     pthread_cond_t cond;
+    int wait_threads;
+    pthread_mutex_t wait_lock;
+    pthread_cond_t wait_cond;
 } jk_thread_pool_t;
 
 

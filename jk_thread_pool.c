@@ -28,6 +28,11 @@ static void *jk_thread_loop(void *arg)
     jk_thread_pool_t *thd = arg;
     jk_thread_task_t *tsk;
 
+    pthread_mutex_lock(&thd->wait_lock);
+    thd->wait_threads--;
+    pthread_cond_signal(&thd->wait_cond);
+    pthread_mutex_unlock(&thd->wait_lock);
+
     while (1) {
 
         pthread_mutex_lock(&thd->lock);
@@ -68,9 +73,12 @@ jk_thread_pool_t *jk_thread_pool_new(int thread_nums)
 
     thd->wait_tasks = NULL;
     thd->task_nums = 0;
+    thd->wait_threads = thread_nums;
 
     pthread_mutex_init(&thd->lock, NULL);
     pthread_cond_init(&thd->cond, NULL);
+    pthread_mutex_init(&thd->wait_lock, NULL);
+    pthread_cond_init(&thd->wait_cond, NULL);
 
     for (i = 0; i < thread_nums; i++) {
         if (pthread_create(&tid, NULL, jk_thread_loop, thd) == -1) {
@@ -78,6 +86,12 @@ jk_thread_pool_t *jk_thread_pool_new(int thread_nums)
             return NULL;
         }
     }
+
+    pthread_mutex_lock(&thd->wait_lock);
+    while (thd->wait_threads > 0) {
+        pthread_cond_wait(&thd->wait_cond, &thd->wait_lock);
+    }
+    pthread_mutex_unlock(&thd->wait_lock);
 
     return thd;
 }
