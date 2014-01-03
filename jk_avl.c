@@ -86,8 +86,8 @@ static void jk_avl_rebalance(jk_avl_node_t ***nodeplaces_ptr, int count)
 
         } else {
             int height = (heightleft < heightright ?
-                             heightright : heightleft) + 1;
-            if (height == node->height)
+                                       heightright : heightleft) + 1;
+            if (height == node->height) /* no need rebalance */
                 break;
             node->height = height;
         }
@@ -107,6 +107,35 @@ jk_avl_node_t *jk_avl_find_min(jk_avl_node_t *root)
     }
 
     return node;
+}
+
+
+jk_avl_node_t *jk_avl_find_node(jk_avl_node_t *root, jk_uint64_t key)
+{
+    jk_avl_node_t *node = root;
+
+    while (node) {
+        if (node->key == key) {
+            return node;
+        } else if (node->key > key) {
+            node = node->left;
+        } else {
+            node = node->right;
+        }
+    }
+    return NULL;
+}
+
+
+void *jk_avl_find(jk_avl_node_t *root, jk_uint64_t key)
+{
+    jk_avl_node_t *node;
+
+    node = jk_avl_find_node(root, key);
+    if (node) {
+        return node->data;
+    }
+    return NULL;
 }
 
 
@@ -169,6 +198,7 @@ void jk_avl_remove(jk_avl_node_t *node_to_delete, jk_avl_node_t **ptree)
         *nodeplace_to_delete = node_to_delete->right;
         stack_ptr--;
         stack_count--;
+
     } else {
         jk_avl_node_t *** stack_ptr_to_delete = stack_ptr;
         jk_avl_node_t ** nodeplace = &node_to_delete->left;

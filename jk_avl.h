@@ -17,6 +17,8 @@ struct jk_avl_node_s {
 
 
 jk_avl_node_t *jk_avl_find_min(jk_avl_node_t *root);
+jk_avl_node_t *jk_avl_find_node(jk_avl_node_t *root, jk_uint64_t key);
+void *jk_avl_find(jk_avl_node_t *root, jk_uint64_t key);
 void jk_avl_insert(jk_avl_node_t *new_node, jk_avl_node_t **ptree);
 void jk_avl_remove(jk_avl_node_t *node_to_delete, jk_avl_node_t **ptree);
 
