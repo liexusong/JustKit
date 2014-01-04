@@ -21,6 +21,8 @@
 #ifndef __JK_EVENT_H
 #define __JK_EVENT_H
 
+#include <sys/time.h>
+
 #define JK_EVENT_NEVENT  0
 #define JK_EVENT_REVENT  1
 #define JK_EVENT_WEVENT  2

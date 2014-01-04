@@ -19,7 +19,6 @@
  */
 
 #include <stdlib.h>
-#include <sys/time.h>
 #include "jk_event.h"
 
 
@@ -236,10 +235,121 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
             }
 
             if ((e->events & EPOLLOUT) && (node->event & JK_EVENT_WEVENT)) {
+
                 if (!rfired || node->rev_handler != node->wev_handler) {
                     node->wev_handler(ev, fd, node->data);
                 }
             }
+        }
+    }
+
+    return nevents;
+}
+
+#else
+
+#include <string.h>
+#include <sys/select.h>
+
+struct jk_event_context {
+    fd_set  rfds,  wfds;
+    fd_set _rfds, _wfds;
+    int max_fd;
+};
+
+
+static int jk_event_context_init(jk_event_t *ev)
+{
+    struct jk_event_context *ctx = malloc(sizeof(*ctx));
+
+    if (!ctx) return -1;
+
+    FD_ZERO(&ctx->rfds);
+    FD_ZERO(&ctx->wfds);
+
+    ctx->max_fd = -1;
+    ev->ctx = ctx;
+
+    return 0;
+}
+
+
+static void jk_event_context_free(jk_event_t *ev)
+{
+    free(ev->ctx);
+}
+
+
+static int jk_event_context_add(jk_event_t *ev, int fd, int event)
+{
+    struct jk_event_context *ctx = ev->ctx;
+
+    if (event & JK_EVENT_REVENT) FD_SET(fd, &ctx->rfds);
+    if (event & JK_EVENT_WEVENT) FD_SET(fd, &ctx->wfds);
+
+    if (fd > ctx->max_fd) ctx->max_fd = fd;
+
+    return 0;
+}
+
+
+static int jk_event_context_del(jk_event_t *ev, int fd, int event)
+{
+    struct jk_event_context *ctx = ev->ctx;
+
+    if (event & JK_EVENT_REVENT) FD_CLR(fd, &ctx->rfds);
+    if (event & JK_EVENT_WEVENT) FD_CLR(fd, &ctx->wfds);
+
+    /* not in read set and write set,
+     * update max fd. */
+    if (fd == ctx->max_fd && !FD_ISSET(fd, &ctx->rfds) && 
+        !FD_ISSET(fd, &ctx->wfds))
+    {
+        int i;
+
+        for (i = ev->max_events - 1; i >= 0; i--) {
+            if (ev->events[i].event != JK_EVENT_NEVENT) {
+                break;
+            }
+        }
+
+        ctx->max_fd = i;
+    }
+
+    return 0;
+}
+
+
+static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
+{
+    struct jk_event_context *ctx = ev->ctx;
+    int retval, i, nevents = 0;
+
+    memcpy(&ctx->_rfds, &ctx->rfds, sizeof(fd_set));
+    memcpy(&ctx->_wfds, &ctx->wfds, sizeof(fd_set));
+
+    retval = select(ctx->max_fd + 1, &ctx->_rfds, &ctx->_wfds, NULL, tvp);
+
+    if (retval > 0) {
+
+        for (i = 0; i <= ctx->max_fd; i++) {
+
+            int rfired = 0;
+            jk_event_node_t *node = &ev->events[i];
+
+            if ((node->event & JK_EVENT_REVENT) && FD_ISSET(i, &ctx->_rfds)) {
+                node->rev_handler(ev, i, node->data);
+                rfired = 1;
+            }
+
+            if ((node->event & JK_EVENT_WEVENT) && FD_ISSET(i, &ctx->_wfds)) {
+
+                if (!rfired || node->rev_handler != node->wev_handler) {
+                    node->wev_handler(ev, i, node->data);
+                }
+            }
+
+            nevents++;
         }
     }
 
