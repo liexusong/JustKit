@@ -214,7 +214,7 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
 {
     struct jk_event_context *ctx = ev->ctx;
     jk_event_node_t *node;
-    int nevents = 0, i;
+    int i, nevents = 0;
 
     nevents = epoll_wait(ctx->epfd, ctx->events, ev->max_events,
                          tvp ? (tvp->tv_sec * 1000 + tvp->tv_usec / 1000) : -1);
@@ -337,7 +337,7 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
 {
     struct jk_event_context *ctx = ev->ctx;
     jk_event_node_t *node;
-    int retval, nevents = 0;
+    int i, retval, nevents = 0;
 
     if (tvp != NULL) {
         struct timespec timeout;
@@ -353,7 +353,6 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
     }    
 
     if (retval > 0) {
-        int i;
 
         nevents = retval;
 
@@ -459,7 +458,8 @@ static int jk_event_context_del(jk_event_t *ev, int fd, int event)
 static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
 {
     struct jk_event_context *ctx = ev->ctx;
-    int retval, i, nevents = 0;
+    jk_event_node_t *node;
+    int i, retval, nevents = 0;
 
     memcpy(&ctx->_rfds, &ctx->rfds, sizeof(fd_set));
     memcpy(&ctx->_wfds, &ctx->wfds, sizeof(fd_set));
@@ -470,18 +470,20 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
 
         for (i = 0; i <= ctx->max_fd; i++) {
 
+            int fd = i;
             int rfired = 0;
-            jk_event_node_t *node = &ev->events[i];
 
-            if ((node->event & JK_EVENT_REVENT) && FD_ISSET(i, &ctx->_rfds)) {
-                node->rev_handler(ev, i, node->data);
+            node = &ev->events[fd];
+
+            if ((node->event & JK_EVENT_REVENT) && FD_ISSET(fd, &ctx->_rfds)) {
+                node->rev_handler(ev, fd, node->data);
                 rfired = 1;
             }
 
-            if ((node->event & JK_EVENT_WEVENT) && FD_ISSET(i, &ctx->_wfds)) {
+            if ((node->event & JK_EVENT_WEVENT) && FD_ISSET(fd, &ctx->_wfds)) {
 
                 if (!rfired || node->rev_handler != node->wev_handler) {
-                    node->wev_handler(ev, i, node->data);
+                    node->wev_handler(ev, fd, node->data);
                 }
             }
 
