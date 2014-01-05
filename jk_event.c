@@ -372,7 +372,7 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
 
             if ((node->event & JK_EVENT_WEVENT) && e->filter == EVFILT_WRITE) {
 
-                if (!rfired && node->rev_handler != node->wev_handler) {
+                if (!rfired || node->rev_handler != node->wev_handler) {
                     node->wev_handler(ev, fd, node->data);
                 }
             }
