@@ -27,10 +27,8 @@
 #define JK_EVENT_REVENT  1
 #define JK_EVENT_WEVENT  2
 
-
 typedef struct jk_event_s jk_event_t;
 typedef void jk_event_callback_fn(jk_event_t *ev, int fd, void *data);
-
 
 typedef struct jk_event_node_s {
     int event;
@@ -38,7 +36,6 @@ typedef struct jk_event_node_s {
     jk_event_callback_fn *wev_handler;
     void *data;
 } jk_event_node_t;
-
 
 struct jk_event_s {
     int max_events;
@@ -53,6 +50,5 @@ int jk_event_add(jk_event_t *ev, int fd, int event,
     jk_event_callback_fn *handler, void *data);
 int jk_event_del(jk_event_t *ev, int fd, int event);
 int jk_event_process(jk_event_t *ev, struct timeval *tv);
-
 
 #endif

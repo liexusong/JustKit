@@ -246,6 +246,142 @@ static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
     return nevents;
 }
 
+#elif defined(__FreeBSD__)
+
+#include <sys/event.h>
+
+struct jk_event_context {
+    int kqfd;
+    struct kevent *events;
+};
+
+
+static int jk_event_context_init(jk_event_t *ev)
+{
+    struct jk_event_context *ctx = malloc(sizeof(*ctx));
+
+    if (!ctx) return -1;
+
+    ctx->events = malloc(sizeof(struct kevent) * ev->max_events);
+    if (!ctx->events) {
+        free(ctx);
+        return -1;
+    }
+
+    ctx->kqfd = kqueue();
+    if (ctx->kqfd == -1) {
+        free(ctx->events);
+        free(ctx);
+        return -1;
+    }
+
+    ev->ctx = ctx;
+
+    return 0;    
+}
+
+
+static void jk_event_context_free(jk_event_t *ev)
+{
+    struct jk_event_context *ctx = ev->ctx;
+
+    close(ctx->kqfd);
+    free(ctx->events);
+    free(ctx);
+}
+
+
+static int jk_event_context_add(jk_event_t *ev, int fd, int event)
+{
+    struct jk_event_context *ctx = ev->ctx;
+    struct kevent ke;
+
+    if (event & JK_EVENT_REVENT) {
+        EV_SET(&ke, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+        if (kevent(ctx->kqfd, &ke, 1, NULL, 0, NULL) == -1)
+            return -1;
+    }
+
+    if (event & JK_EVENT_WEVENT) {
+        EV_SET(&ke, fd, EVFILT_WRITE, EV_ADD, 0, 0, NULL);
+        if (kevent(ctx->kqfd, &ke, 1, NULL, 0, NULL) == -1)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+static int jk_event_context_del(jk_event_t *ev, int fd, int event)
+{
+    struct jk_event_context *ctx = ev->ctx;
+    struct kevent ke;
+
+    if (event & JK_EVENT_REVENT) {
+        EV_SET(&ke, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+        if (kevent(ctx->kqfd, &ke, 1, NULL, 0, NULL) == -1)
+            return -1;
+    }
+
+    if (event & JK_EVENT_WEVENT) {
+        EV_SET(&ke, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+        if (kevent(ctx->kqfd, &ke, 1, NULL, 0, NULL) == -1)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+static int jk_event_context_process(jk_event_t *ev, struct timeval *tvp)
+{
+    struct jk_event_context *ctx = ev->ctx;
+    jk_event_node_t *node;
+    int retval, nevents = 0;
+
+    if (tvp != NULL) {
+        struct timespec timeout;
+
+        timeout.tv_sec = tvp->tv_sec;
+        timeout.tv_nsec = tvp->tv_usec * 1000;
+
+        retval = kevent(ctx->kqfd, NULL, 0, ctx->events, ev->max_events,
+              &timeout);
+
+    } else {
+        retval = kevent(ctx->kqfd, NULL, 0, ctx->events, ev->max_events, NULL);
+    }    
+
+    if (retval > 0) {
+        int i;
+
+        nevents = retval;
+
+        for(i = 0; i < nevents; i++) {
+
+            struct kevent *e = ctx->events + i;
+            int fd = e->ident;
+            int rfired = 0;
+
+            node = &ev->events[fd];
+
+            if ((node->event & JK_EVENT_REVENT) && e->filter == EVFILT_READ) {
+                node->rev_handler(ev, fd, node->data);
+                rfired = 1;
+            }
+
+            if ((node->event & JK_EVENT_WEVENT) && e->filter == EVFILT_WRITE) {
+
+                if (!rfired && node->rev_handler != node->wev_handler) {
+                    node->wev_handler(ev, fd, node->data);
+                }
+            }
+        }
+    }
+
+    return nevents;
+}
+
 #else
 
 #include <string.h>
@@ -300,8 +436,8 @@ static int jk_event_context_del(jk_event_t *ev, int fd, int event)
     if (event & JK_EVENT_REVENT) FD_CLR(fd, &ctx->rfds);
     if (event & JK_EVENT_WEVENT) FD_CLR(fd, &ctx->wfds);
 
-    /* not in read set and write set,
-     * update max fd. */
+    /* if the fd not in read set and write set,
+     * and the fd was the max fd, so update the max fd. */
     if (fd == ctx->max_fd && !FD_ISSET(fd, &ctx->rfds) && 
         !FD_ISSET(fd, &ctx->wfds))
     {
