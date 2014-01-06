@@ -95,53 +95,6 @@ jk_timer_node_t *jk_timer_min_node(jk_timer_t *timer)
 }
 
 
-int jk_timer_wait(jk_timer_t *timer)
-{
-    jk_timer_node_t *node;
-    jk_uint64_t current, retval, nevents = 0;
-
-    for (;;) {
-
-        node = jk_timer_min_node(timer);
-        if (!node) {
-            break;
-        }
-
-        current = jk_current_time();
-
-        if (node->timer_node.key <= current) {
-
-            jk_avl_remove(&node->timer_node, &timer->root);
-
-            retval = node->cb(node->data);
-            if (retval > 0) {
-                node->timer_node.key = retval + jk_current_time(); /* new key */
-                jk_avl_insert(&node->timer_node, &timer->root);
-
-            } else {
-                if (node->free) {
-                    node->free(node->data);
-                }
-                free(node);
-            }
-
-            nevents++;
-
-        } else {
-            jk_uint64_t remain = node->timer_node.key - current;
-            struct timeval tv;
-
-            tv.tv_sec = remain / 1000;
-            tv.tv_usec = (remain % 1000) * 1000;
-
-            select(0, NULL, NULL, NULL, &tv);
-        }
-    }
-
-    return nevents;
-}
-
-
 int jk_timer_process_timeout(jk_timer_t *timer)
 {
     jk_timer_node_t *node;

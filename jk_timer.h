@@ -47,7 +47,6 @@ jk_timer_t *jk_timer_new();
 int jk_timer_push(jk_timer_t *timer, jk_uint64_t timeout,
     jk_timer_callback_fn *cb, jk_timer_free_fn *free, void *data);
 jk_timer_node_t *jk_timer_min_node(jk_timer_t *timer);
-int jk_timer_wait(jk_timer_t *timer);
 int jk_timer_process_timeout(jk_timer_t *timer);
 void jk_timer_destroy(jk_timer_t *timer);
 void jk_timer_free(jk_timer_t *timer);
