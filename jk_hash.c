@@ -51,6 +51,34 @@ static long jk_hash_default_hash(char *key, int klen)
 }
 
 
+int jk_hash_init(jk_hash_t *o, unsigned int init_buckets, jk_hash_fn *hash,
+    jk_hash_free *free)
+{
+    if (init_buckets < JK_HASH_BUCKETS_MIN_SIZE) {
+        init_buckets = JK_HASH_BUCKETS_MIN_SIZE;
+
+    } else if (init_buckets > JK_HASH_BUCKETS_MAX_SIZE) {
+        init_buckets = JK_HASH_BUCKETS_MAX_SIZE;
+    }
+
+    o->buckets = calloc(1, sizeof(void *) * init_buckets);
+    if (NULL == o->buckets) {
+        return -1;
+    }
+
+    if (!hash) {
+        hash = &jk_hash_default_hash;
+    }
+
+    o->hash = hash;
+    o->free = free;
+    o->buckets_size = init_buckets;
+    o->elm_nums = 0;
+
+    return 0;
+}
+
+
 jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_fn *hash,
     jk_hash_free *free)
 {
@@ -61,29 +89,10 @@ jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_fn *hash,
         return NULL;
     }
 
-    if (init_buckets < JK_HASH_BUCKETS_MIN_SIZE) {
-        init_buckets = JK_HASH_BUCKETS_MIN_SIZE;
-
-    } else if (init_buckets > JK_HASH_BUCKETS_MAX_SIZE) {
-        init_buckets = JK_HASH_BUCKETS_MAX_SIZE;
-    }
-
-    o->buckets = malloc(sizeof(void *) * init_buckets);
-    if (NULL == o->buckets) {
+    if (jk_hash_init(o, init_buckets, hash, free) == -1) {
         free(o);
         return NULL;
     }
-
-    memset(o->buckets, 0, sizeof(void *) * init_buckets);
-
-    if (!hash) {
-        hash = &jk_hash_default_hash;
-    }
-
-    o->hash = hash;
-    o->free = free;
-    o->buckets_size = init_buckets;
-    o->elm_nums = 0;
 
     return o;
 }
@@ -197,11 +206,12 @@ int jk_hash_remove(jk_hash_t *o, char *key, int klen)
 
 static void jk_hash_rehash(jk_hash_t *o)
 {
-    unsigned int new_bucket_size;
-    void **new_buckets;
+    jk_hash_t new_htb;
+    unsigned int buckets_size;
     jk_hash_entry_t *e, *next;
     int i, index;
 
+    /* find new buckets size */
     for (i = 0; jk_hash_buckets_size[i] != 0; i++) {
         if (jk_hash_buckets_size[i] > o->buckets_size) {
             break;
@@ -209,21 +219,17 @@ static void jk_hash_rehash(jk_hash_t *o)
     }
 
     if (jk_hash_buckets_size[i] > 0) {
-        new_bucket_size = jk_hash_buckets_size[i];
+        buckets_size = jk_hash_buckets_size[i];
     } else {
-        new_bucket_size = jk_hash_buckets_size[i - 1];
+        buckets_size = jk_hash_buckets_size[i-1];
     }
 
-    if (new_bucket_size == o->buckets_size) { /* already the max buckets size */
+    /* if new buckets size equls old buckets size,
+     * or init new hashtable failed, return. */
+    if (buckets_size == o->buckets_size ||
+        jk_hash_init(&new_htb, buckets_size, NULL, NULL) == -1) {
         return;
     }
-
-    new_buckets = malloc(sizeof(void *) * new_bucket_size);
-    if (NULL == new_buckets) { /* not enough memory */
-        return;
-    }
-
-    memset(new_buckets, 0, sizeof(void *) * new_bucket_size);
 
     for (i = 0; i < o->buckets_size; i++) {
 
@@ -231,9 +237,9 @@ static void jk_hash_rehash(jk_hash_t *o)
         while (e) {
             next = e->next; /* next process entry */
 
-            index = e->hashval % new_bucket_size;
-            e->next = new_buckets[index];
-            new_buckets[index] = e;
+            index = e->hashval % new_htb.buckets;
+            e->next = new_htb.buckets[index];
+            new_htb.buckets[index] = e;
 
             e = next;
         }
@@ -241,8 +247,8 @@ static void jk_hash_rehash(jk_hash_t *o)
 
     free(o->buckets); /* free old buckets */
 
-    o->buckets = new_buckets;
-    o->buckets_size = new_bucket_size;
+    o->buckets = new_htb.buckets;
+    o->buckets_size = new_htb.buckets_size;
 
     return;
 }
