@@ -30,12 +30,12 @@
 #define  JK_HASH_BUCKETS_MIN_SIZE   7
 #define  JK_HASH_BUCKETS_MAX_SIZE   2147483647
 
-typedef long jk_hash_fn(char *, int);
-typedef void jk_hash_free(void *);
+typedef long jk_hash_hash_fn(char *, int);
+typedef void jk_hash_free_fn(void *);
 
 typedef struct jk_hash_s {
-    jk_hash_fn *hash;
-    jk_hash_free *free;
+    jk_hash_hash_fn *hash;
+    jk_hash_free_fn *free;
     void **buckets;
     unsigned int buckets_size;
     unsigned int elm_nums;
@@ -52,10 +52,10 @@ struct jk_hash_entry_s {
 };
 
 
-int jk_hash_init(jk_hash_t *o, unsigned int init_buckets, jk_hash_fn *hash,
-    jk_hash_free *free);
-jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_fn *hash,
-    jk_hash_free *free);
+int jk_hash_init(jk_hash_t *o, unsigned int init_buckets, jk_hash_hash_fn *hash,
+    jk_hash_free_fn *free);
+jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_hash_fn *hash,
+    jk_hash_free_fn *free);
 int jk_hash_find(jk_hash_t *o, char *key, int klen, void **ret);
 int jk_hash_insert(jk_hash_t *o, char *key, int klen, void *data, int replace);
 int jk_hash_remove(jk_hash_t *o, char *key, int klen);

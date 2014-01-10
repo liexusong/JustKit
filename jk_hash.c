@@ -51,8 +51,8 @@ static long jk_hash_default_hash(char *key, int klen)
 }
 
 
-int jk_hash_init(jk_hash_t *o, unsigned int init_buckets, jk_hash_fn *hash,
-    jk_hash_free *free)
+int jk_hash_init(jk_hash_t *o, unsigned int init_buckets, jk_hash_hash_fn *hash,
+    jk_hash_free_fn *free)
 {
     if (init_buckets < JK_HASH_BUCKETS_MIN_SIZE) {
         init_buckets = JK_HASH_BUCKETS_MIN_SIZE;
@@ -79,8 +79,8 @@ int jk_hash_init(jk_hash_t *o, unsigned int init_buckets, jk_hash_fn *hash,
 }
 
 
-jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_fn *hash,
-    jk_hash_free *free)
+jk_hash_t *jk_hash_new(unsigned int init_buckets, jk_hash_hash_fn *hash,
+    jk_hash_free_fn *free)
 {
     jk_hash_t *o;
 
