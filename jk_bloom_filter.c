@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "jk_bloom_filter.h"
 
 
@@ -30,6 +31,8 @@ static void jk_bloom_filter_init_salts()
 {
     int i = 0, j;
     unsigned int salt;
+
+    srand((unsigned int)time(NULL));
 
     while (i < 8) {
 
