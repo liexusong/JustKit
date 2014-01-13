@@ -23,9 +23,32 @@
 #include "jk_bloom_filter.h"
 
 
+static unsigned int __salts[8];
+
+
+static void jk_bloom_filter_init_salts()
+{
+    int i = 0, j;
+    unsigned int salt;
+
+    while (i < 8) {
+
+        salt = ((unsigned int)rand() ^ (unsigned int)rand());
+
+        for (j = 0; j < i; j++) { /* make sure all salts are different */
+            if (salts[j] == salt) continue;
+        }
+
+        __salts[i] = salt;
+
+        i++;
+    }
+}
+
+
 static unsigned int jk_bloom_filter_default_hash(char *key, int len, int index)
 {
-    int h = index, g;
+    unsigned int h = __salts[index], g;
     char *end = key + len;
 
     while (key < end) {
@@ -44,6 +67,7 @@ void jk_bloom_filter_init(jk_bloom_filter_t *filter,
     jk_bloom_filter_hash_fn *hash, char *bits, int size)
 {
     if (!hash) {
+        jk_bloom_filter_init_salts();
         hash = &jk_bloom_filter_default_hash;
     }
 
