@@ -39,7 +39,7 @@ static void jk_bloom_filter_init_salts()
         salt = ((unsigned int)rand() ^ (unsigned int)rand());
 
         for (j = 0; j < i; j++) { /* make sure all salts are different */
-            if (salts[j] == salt) continue;
+            if (__salts[j] == salt) continue;
         }
 
         __salts[i] = salt;
