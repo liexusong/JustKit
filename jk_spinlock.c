@@ -27,11 +27,12 @@ static int ncpu;
 
 void jk_spinlock_init()
 {
-    ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+    ncpu = sysconf(_SC_NPROCESSORS_ONLN); /* linux only */
     if (ncpu <= 0) {
         ncpu = 1;
     }
 }
+
 
 void jk_spinlock(int *lock, int which)
 {
@@ -49,7 +50,7 @@ void jk_spinlock(int *lock, int which)
             for (n = 1; n < 129; n << 1) {
 
                 for (i = 0; i < n; i++) {
-                    __asm("pause");
+                    __asm__("pause");
                 }
     
                 if (*lock == 0 && 
