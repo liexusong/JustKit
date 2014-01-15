@@ -74,6 +74,8 @@ void jk_bloom_filter_init(jk_bloom_filter_t *filter,
         hash = &jk_bloom_filter_default_hash;
     }
 
+    memset(bits, 0, size);
+
     filter->hash = hash;
     filter->size = size * 8; /* the size equals bits's size */
     filter->bits = bits;
@@ -89,8 +91,6 @@ jk_bloom_filter_t *jk_bloom_filter_new(jk_bloom_filter_hash_fn *hash,
     if (NULL == filter) {
         return NULL;
     }
-
-    memset(bits, 0, size);
 
     jk_bloom_filter_init(filter, hash, bits, size);
 
