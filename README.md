@@ -1,7 +1,7 @@
 JustKit
 =======
 
-<pre> JustKit is a Linux C ToolKit which simple and easy to use </pre>
+<pre> JustKit is a Linux C ToolKit which simple and easy to use, includes: </pre>
 
 
 1) HashTable <br />
@@ -13,3 +13,6 @@ JustKit
 7) I/O Event <br />
 8) Bloom Filter<br />
 9) Double Link List<br />
+
+
+<pre> You can contact author by QQ(280259971) or email(liexusong@qq.com) or weibo(@¡––ÒÀ…V) </pre>
