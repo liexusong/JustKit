@@ -1,8 +1,8 @@
 JustKit
 =======
 
-JustKit is a Linux C ToolKit which simple and easy to use
----------------------------------------------------------
+<pre> JustKit is a Linux C ToolKit which simple and easy to use </pre>
+
 
 1) HashTable <br />
 2) ThreadPool <br />
