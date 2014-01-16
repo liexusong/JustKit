@@ -39,7 +39,7 @@ struct jk_list_s {
 #define jk_list_for_each2(node, head)                                   \
     for (node = (head)->prev; node != (head); node = node->prev)
 
-#define jk_list_for_each_safe2(node, n, head)                           \
+#define jk_list_for_each2_safe(node, n, head)                           \
     for (node = (head)->prev, n = node->prev; node != (head);           \
          node = n, n = node->prev)
 
