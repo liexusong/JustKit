@@ -29,6 +29,9 @@ struct jk_list_s {
 };
 
 
+#define jk_list_entry(node, type, member)                               \
+    ((type *)((char *)(node)-(unsigned long)(&((type *)0)->member)))
+
 #define jk_list_for_each(node, head)                                    \
     for (node = (head)->next; node != (head); node = node->next)
 
