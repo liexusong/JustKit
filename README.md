@@ -15,4 +15,4 @@ JustKit
 9) Double Link List<br />
 
 
-<pre> You can contact author by QQ(280259971) or email(liexusong@qq.com) or weibo(@ÁĞĞñËÉV) </pre>
+<pre> You can contact author by QQ(280259971) or email(liexusong@qq.com) or weibo(@åˆ—æ—­æ¾V) </pre>
