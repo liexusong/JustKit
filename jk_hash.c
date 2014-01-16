@@ -237,7 +237,7 @@ static void jk_hash_rehash(jk_hash_t *o)
         while (e) {
             next = e->next; /* next process entry */
 
-            index = e->hashval % new_htb.buckets;
+            index = e->hashval % new_htb.buckets_size;
             e->next = new_htb.buckets[index];
             new_htb.buckets[index] = e;
 

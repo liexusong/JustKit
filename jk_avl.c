@@ -87,7 +87,7 @@ static void jk_avl_rebalance(jk_avl_node_t ***nodeplaces_ptr, int count)
         } else {
             int height = (heightleft < heightright ?
                                        heightright : heightleft) + 1;
-            if (height == node->height) /* no need rebalance */
+            if (height == node->height) /* don't need rebalance */
                 break;
             node->height = height;
         }
@@ -104,6 +104,21 @@ jk_avl_node_t *jk_avl_find_min(jk_avl_node_t *root)
             break;
         }
         node = node->left;
+    }
+
+    return node;
+}
+
+
+jk_avl_node_t *jk_avl_find_max(jk_avl_node_t *root)
+{
+    jk_avl_node_t *node = root;
+
+    while (node) {
+        if (node->right == jk_avl_empty_node) {
+            break;
+        }
+        node = node->right;
     }
 
     return node;

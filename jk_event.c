@@ -106,6 +106,7 @@ int jk_event_del(jk_event_t *ev, int fd, int event)
     }
 
     node = &ev->events[fd];
+
     node->event = node->event & (~event);
 
     return 0;

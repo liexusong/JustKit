@@ -24,6 +24,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "jk_thread_pool.h"
 #include "jk_aio.h"
 
@@ -210,6 +211,8 @@ static void jk_aio_destory(jk_aio_request_t *req)
 
 static void jk_aio_execute(void *arg)
 {
+    extern int errno;
+
     jk_aio_request_t *req = arg;
 
     switch (req->type) {
@@ -242,7 +245,7 @@ static void jk_aio_execute(void *arg)
         break;
     }
 
-    req->errno = errno;
+    req->error = errno;
 }
 
 

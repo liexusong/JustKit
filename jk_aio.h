@@ -57,7 +57,7 @@ struct jk_aio_request_s {
     int flags;               /* open */
     mode_t mode;             /* open/mkdir */
     int result;              /* result */
-    int errno;               /* errno */
+    int error;               /* errno */
     jk_aio_finish_fn *finish;
     jk_aio_request_t *next;
 };
