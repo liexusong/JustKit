@@ -108,9 +108,13 @@ int jk_buf_read(jk_buf_t *buf, int fd, int nread)
 
     bytes = read(fd, buf->last, size);
 
-    if (bytes > 0 && buf->cb) {
+    if (bytes > 0) {
+
         buf->last += bytes;
-        buf->pos = buf->cb(buf->pos, buf->last - buf->pos, buf->ctx);
+
+        if (buf->cb) {
+            buf->pos = buf->cb(buf->pos, buf->last - buf->pos, buf->ctx);
+        }
     }
 
     return bytes;
