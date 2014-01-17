@@ -1,4 +1,3 @@
-
 # Copyright (c) Liexusong
 
 CC=gcc
@@ -8,6 +7,8 @@ PRGNAME = libjustkit.a
 
 all: $(OBJ)
 	ar -r $(PRGNAME) $(OBJ)
+
+install:
 	mkdir /usr/include/justkit
 	cp jk_aio.h /usr/include/justkit
 	cp jk_avl.h /usr/include/justkit
