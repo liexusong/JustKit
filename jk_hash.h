@@ -60,5 +60,6 @@ int jk_hash_find(jk_hash_t *o, char *key, int klen, void **ret);
 int jk_hash_insert(jk_hash_t *o, char *key, int klen, void *data, int replace);
 int jk_hash_remove(jk_hash_t *o, char *key, int klen);
 void jk_hash_destroy(jk_hash_t *o);
+void jk_hash_free(jk_hash_t *o);
 
 #endif

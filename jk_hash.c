@@ -109,7 +109,9 @@ int jk_hash_find(jk_hash_t *o, char *key, int klen, void **ret)
         if (e->hashval == hashval && e->klen == klen &&
             !strncmp(e->key, key, klen))
         {
-            *ret = e->data;
+            if (ret) {
+                *ret = e->data;
+            }
             return JK_HASH_OK;
         }
         e = e->next;
@@ -274,8 +276,14 @@ void jk_hash_destroy(jk_hash_t *o)
     }
 
     free(o->buckets);
-    free(o);
 
     return;
+}
+
+
+void jk_hash_free(jk_hash_t *o)
+{
+    jk_hash_destroy(o);
+    free(o);
 }
 
