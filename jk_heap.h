@@ -28,10 +28,10 @@ typedef int jk_heap_comp_fn(void *data1, void *data2);
 typedef void jk_heap_destroy_fn(void *data);
 
 typedef struct jk_heap_s {
-    void           **tree;
-    int              size;
-    int              used;
-    jk_heap_comp_fn *comp;
+    void              **tree;
+    int                 size;
+    int                 used;
+    jk_heap_comp_fn    *comp;
     jk_heap_destroy_fn *destroy;
 } jk_heap_t;
 

@@ -2,7 +2,7 @@
 
 CC=gcc
 
-OBJ = jk_aio.o jk_avl.o jk_bloom_filter.o jk_event.o jk_hash.o jk_spinlock.o jk_thread_pool.o jk_timer.o jk_skip.o
+OBJ = jk_aio.o jk_avl.o jk_bloom_filter.o jk_event.o jk_hash.o jk_spinlock.o jk_thread_pool.o jk_timer.o jk_skip.o jk_heap.o
 PRGNAME = libjustkit.a
 
 all: $(OBJ)
@@ -20,6 +20,7 @@ install:
 	cp jk_timer.h /usr/include/justkit
 	cp jk_skip.h /usr/include/justkit
 	cp jk_list.h /usr/include/justkit
+	cp jk_heap.h /usr/include/justkit
 	cp jk_types.h /usr/include/justkit
 	cp $(PRGNAME) /usr/local/lib
 
@@ -49,6 +50,9 @@ jk_timer.o: jk_timer.c jk_timer.h
 
 jk_skip.o: jk_skip.c jk_skip.h
 	$(CC) -c jk_skip.c
+
+jk_heap.o: jk_heap.c jk_heap.h
+	$(CC) -c jk_heap.c
 
 clean:
 	rm -rf $(PRGNAME) *.o
