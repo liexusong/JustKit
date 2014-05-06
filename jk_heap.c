@@ -18,6 +18,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h>
 #include "jk_heap.h"
 
 
@@ -132,9 +133,9 @@ int jk_heap_extract(jk_heap_t *heap, void **data)
         *data = heap->tree[0];
     }
 
-    heap->used--; /* adjust the used of the heap */
+    heap->used--; /* adjust the elements used of the heap */
 
-    save = heap->tree[jk_heap_length(heap)];
+    save = heap->tree[jk_heap_length(heap)]; /* the last element */
 
     if (heap->used == 0) {
         nsize = JK_HEAP_INIT_SIZE;
@@ -145,14 +146,14 @@ int jk_heap_extract(jk_heap_t *heap, void **data)
     }
 
     if (nsize != heap->size) {
-        temp = realloc(heap->tree, sizeof(void *) * nsize);
+        temp = (void **)realloc(heap->tree, sizeof(void *) * nsize);
         if (temp != NULL) {
             heap->tree = temp;
             heap->size = nsize;
         }
     }
 
-    if (jk_heap_length(heap) == 0) { /* now was empty, return this */
+    if (jk_heap_length(heap) == 0) { /* now was empty, return here */
         return 0;
     }
 
@@ -178,12 +179,12 @@ int jk_heap_extract(jk_heap_t *heap, void **data)
 
         if (mpos == ipos) {
             break;
-        } else {
-            temp = heap->tree[mpos];
-            heap->tree[mpos] = heap->tree[ipos];
-            heap->tree[ipos] = temp;
-            ipos = mpos;
         }
+
+        temp = heap->tree[mpos];
+        heap->tree[mpos] = heap->tree[ipos];
+        heap->tree[ipos] = temp;
+        ipos = mpos;
     }
 
     return 0;
