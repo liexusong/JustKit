@@ -28,8 +28,6 @@ typedef void jk_thread_finish_fn(void *);
 typedef struct jk_thread_task_s jk_thread_task_t;
 
 typedef struct jk_thread_pool_s {
-    jk_thread_task_t *wait_tasks;
-    int task_nums;
     int worker_threads;
     pthread_t *tids;
     pthread_mutex_t lock;
@@ -37,6 +35,9 @@ typedef struct jk_thread_pool_s {
     int wait_threads;
     pthread_mutex_t wait_lock;
     pthread_cond_t wait_cond;
+    jk_thread_task_t *wait_tasks;
+    int task_nums;
+    int quit_flag;
 } jk_thread_pool_t;
 
 struct jk_thread_task_s {
