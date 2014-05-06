@@ -20,6 +20,7 @@
 
 #include "jk_heap.h"
 
+
 #define jk_heap_parent(pos)  ((int)(((pos) - 1) / 2))
 #define jk_heap_left(pos)    ((pos) * 2 + 1)
 #define jk_heap_right(pos)   ((pos) * 2 + 2)
@@ -151,7 +152,7 @@ int jk_heap_extract(jk_heap_t *heap, void **data)
         }
     }
 
-    if (jk_heap_length(heap) == 0) {
+    if (jk_heap_length(heap) == 0) { /* now was empty, return this */
         return 0;
     }
 
@@ -160,16 +161,17 @@ int jk_heap_extract(jk_heap_t *heap, void **data)
     for (ipos = 0; ; ) {
         lpos = jk_heap_left(ipos);
         rpos = jk_heap_right(ipos);
-        mpos = ipos;
 
         if (lpos < jk_heap_length(heap) &&
             heap->comp(heap->tree[lpos], heap->tree[ipos]) > 0)
         {
             mpos = lpos;
+        } else {
+            mpos = ipos;
         }
 
         if (rpos < jk_heap_length(heap) &&
-            heap->comp(heap->tree[rpos], heap->tree[ipos]) > 0)
+            heap->comp(heap->tree[rpos], heap->tree[mpos]) > 0)
         {
             mpos = rpos;
         }
